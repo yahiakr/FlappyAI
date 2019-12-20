@@ -1,9 +1,11 @@
 from itertools import cycle
 import random
 import sys
+import numpy as np
 
 import pygame
 from pygame.locals import *
+import evolution  
 
 
 FPS = 30
@@ -129,9 +131,29 @@ def main():
             getHitmask(IMAGES['player'][2]),
         )
 
+        scores = []
+        cpt = 0
+        generation = 1
         movementInfo = showWelcomeAnimation()
-        while True:
-            crashInfo = mainGame(movementInfo)
+        evolution.init()
+        model = evolution.load_weights(cpt)
+        done = False
+        while not done:
+            crashInfo = mainGame(movementInfo,model)
+            scores.append(crashInfo['score'])
+            cpt += 1
+            if cpt % evolution.population_size == 0:
+                np.save('./data/scores.npy',scores)
+                scores = []
+                evolution.evolution()
+                cpt = 0
+                generation += 1
+            if generation % (evolution.generations + 1) == 0 : done = True
+            else:
+                model = evolution.load_weights(cpt)
+                print("generation : {} , id : {}".format(generation,cpt))
+            if generation % (evolution.generations + 1) == 0 : done = True
+            
         showGameOverScreen(crashInfo)
 
 
@@ -194,7 +216,7 @@ def showWelcomeAnimation():
         FPSCLOCK.tick(FPS)
 
 
-def mainGame(movementInfo):
+def mainGame(movementInfo,model):
     score = playerIndex = loopIter = 0
     playerIndexGen = movementInfo['playerIndexGen']
     playerx, playery = int(SCREENWIDTH * 0.2), movementInfo['playery']
@@ -232,9 +254,9 @@ def mainGame(movementInfo):
     playerFlapped = False # True when player flaps
 
     nextpipe = lowerPipes[0]
+    distance = 0
+
     while True:
-        # print('distance : {}'.format(nextpipe['x'] - playerx))
-        print('distance : {}'.format(playery - nextpipe['y'] + 50))
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
@@ -245,20 +267,36 @@ def mainGame(movementInfo):
                     playerFlapped = True
                     SOUNDS['wing'].play()
 
+        input1 = nextpipe['x'] + (IMAGES['pipe'][1].get_width() / 4) - playerx
+        input2 = playery - nextpipe['y'] + 50
+
+        inputs = np.asarray([[input1,input2]])
+        output = model.predict(inputs)[0]
+
+        if output > 0.5:
+            if playery > -2 * IMAGES['player'][0].get_height():
+                playerVelY = playerFlapAcc
+                playerFlapped = True
+
         # check for crash here
         crashTest = checkCrash({'x': playerx, 'y': playery, 'index': playerIndex},
                                upperPipes, lowerPipes)
         if crashTest[0]:
+            print("score : {}".format(distance - nextpipe['x'] - playerx))
             return {
-                'y': playery,
-                'groundCrash': crashTest[1],
-                'basex': basex,
-                'upperPipes': upperPipes,
-                'lowerPipes': lowerPipes,
-                'score': score,
-                'playerVelY': playerVelY,
-                'playerRot': playerRot
+                'score': distance - nextpipe['x'] - playerx,
             }
+            # return {
+            #     'y': playery,
+            #     'groundCrash': crashTest[1],
+            #     'basex': basex,
+            #     'upperPipes': upperPipes,
+            #     'lowerPipes': lowerPipes,
+            #     'score': distance - nextpipe['x'] - playerx,
+            #     'playerVelY': playerVelY,
+            #     'playerRot': playerRot,
+            #     'done': done
+            # }
 
         # check for score
         playerMidPos = playerx + IMAGES['player'][0].get_width() / 2
@@ -281,7 +319,7 @@ def mainGame(movementInfo):
 
         # player's movement
         if playerVelY < playerMaxVelY and not playerFlapped:
-            playerVelY += playerAccY
+            playerVelY += playerAccY 
         if playerFlapped:
             playerFlapped = False
 
@@ -295,6 +333,7 @@ def mainGame(movementInfo):
         for uPipe, lPipe in zip(upperPipes, lowerPipes):
             uPipe['x'] += pipeVelX
             lPipe['x'] += pipeVelX
+            distance -= pipeVelX
 
         # add new pipe when first pipe is about to touch left of screen
         if 0 < upperPipes[0]['x'] < 5:
@@ -306,7 +345,7 @@ def mainGame(movementInfo):
         if upperPipes[0]['x'] < -IMAGES['pipe'][0].get_width():
             upperPipes.pop(0)
             lowerPipes.pop(0)
-
+ 
         # draw sprites
         SCREEN.blit(IMAGES['background'], (0,0))
 
