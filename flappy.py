@@ -97,7 +97,9 @@ def main():
     SOUNDS['swoosh'] = pygame.mixer.Sound('assets/audio/swoosh' + soundExt)
     SOUNDS['wing']   = pygame.mixer.Sound('assets/audio/wing' + soundExt)
 
-    while True:
+    done = False
+
+    while not done:
         # select random background sprites
         randBg = random.randint(0, len(BACKGROUNDS_LIST) - 1)
         IMAGES['background'] = pygame.image.load(BACKGROUNDS_LIST[randBg]).convert()
@@ -135,9 +137,8 @@ def main():
         cpt = 0
         generation = 1
         movementInfo = showWelcomeAnimation()
-        evolution.init()
+        # evolution.init()
         model = evolution.load_weights(cpt)
-        done = False
         while not done:
             crashInfo = mainGame(movementInfo,model)
             scores.append(crashInfo['score'])
@@ -154,7 +155,7 @@ def main():
                 print("generation : {} , id : {}".format(generation,cpt))
             if generation % (evolution.generations + 1) == 0 : done = True
             
-        showGameOverScreen(crashInfo)
+        # showGameOverScreen(crashInfo)
 
 
 def showWelcomeAnimation():
@@ -284,19 +285,15 @@ def mainGame(movementInfo,model):
         if crashTest[0]:
             print("score : {}".format(distance - nextpipe['x'] - playerx))
             return {
+                'y': playery,
+                'groundCrash': crashTest[1],
+                'basex': basex,
+                'upperPipes': upperPipes,
+                'lowerPipes': lowerPipes,
                 'score': distance - nextpipe['x'] - playerx,
+                'playerVelY': playerVelY,
+                'playerRot': playerRot,
             }
-            # return {
-            #     'y': playery,
-            #     'groundCrash': crashTest[1],
-            #     'basex': basex,
-            #     'upperPipes': upperPipes,
-            #     'lowerPipes': lowerPipes,
-            #     'score': distance - nextpipe['x'] - playerx,
-            #     'playerVelY': playerVelY,
-            #     'playerRot': playerRot,
-            #     'done': done
-            # }
 
         # check for score
         playerMidPos = playerx + IMAGES['player'][0].get_width() / 2

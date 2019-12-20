@@ -9,7 +9,7 @@ import random
 from KerasGA import GeneticAlgorithm
 
 population_size = 10
-generations = 2
+generations = 5
 
 model = keras.Sequential([
     layers.Dense(6,input_dim=2, activation='relu', name='fc1'),
