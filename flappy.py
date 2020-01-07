@@ -11,7 +11,7 @@ import evolution
 FPS = 30
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
-PIPEGAPSIZE  = 100 # gap between upper and lower part of pipe
+PIPEGAPSIZE  = 130 # gap between upper and lower part of pipe
 BASEY        = SCREENHEIGHT * 0.79
 # image, sound and hitmask  dicts
 IMAGES, SOUNDS, HITMASKS = {}, {}, {}
@@ -268,7 +268,7 @@ def mainGame(movementInfo,model):
                     playerFlapped = True
                     SOUNDS['wing'].play()
 
-        input1 = nextpipe['x'] + (IMAGES['pipe'][1].get_width() / 4) - playerx
+        input1 = nextpipe['x'] + IMAGES['pipe'][1].get_width() / 2 - playerx
         input2 = playery - nextpipe['y'] + 50
 
         inputs = np.asarray([[input1,input2]])
@@ -446,7 +446,7 @@ def getRandomPipe():
     gapY = random.randrange(0, int(BASEY * 0.6 - PIPEGAPSIZE))
     gapY += int(BASEY * 0.2)
     pipeHeight = IMAGES['pipe'][0].get_height()
-    pipeX = SCREENWIDTH + 10
+    pipeX = SCREENWIDTH + 20
 
     return [
         {'x': pipeX, 'y': gapY - pipeHeight},  # upper pipe
